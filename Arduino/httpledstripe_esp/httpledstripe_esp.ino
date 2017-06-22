@@ -30,6 +30,7 @@ boolean white_sparks=false;
 boolean knightrider = false;
 uint16_t rainbowColor=0;
 
+enum effects{OFF,FIRE,RAINBOW,BLINKER,SPARKS,WHITE_SPARKS,KNIGHTRIDER};
 
 uint16_t delay_interval=50;
 
@@ -65,6 +66,17 @@ Serial.println();
   Serial.println(WiFi.localIP());
   server.begin();
  
+}
+
+void setEffect(effects effect){
+  
+  fire = (effect==FIRE);
+  rainbow = (effect==RAINBOW);
+  blinker = (effect==BLINKER);
+  sparks = (effect==SPARKS);
+  white_sparks = (effect==WHITE_SPARKS);
+  knightrider = (effect==KNIGHTRIDER);
+  
 }
 
 // request receive loop
@@ -198,61 +210,37 @@ void loop() {
           }
           // SET FIRE EFFECT
           if (inputLine.length() > 3 && inputLine.substring(0,9) == F("GET /fire")) {
-            fire = true;
-            rainbow = false;
-            sparks = false;
-            white_sparks = false;
-            knightrider = false;
+            setEffect(FIRE);
             stripe_setBrightness(128);
             isGet = true;
           }
           // SET RAINBOW EFFECT
           if (inputLine.length() > 3 && inputLine.substring(0,12) == F("GET /rainbow")) {
-            rainbow = true;
-            fire = false;
-            sparks = false;
-            white_sparks = false;
-            knightrider = false;
+            setEffect(RAINBOW);
             stripe_setBrightness(128);
             isGet = true;
           }
           // SET WHITE_SPARKS EFFECT
           if (inputLine.length() > 3 && inputLine.substring(0,17) == F("GET /white_sparks")) {
-            rainbow = false;
-            fire = false;
-            sparks = false;
-            white_sparks = true;
-            knightrider = false;
+            setEffect(WHITE_SPARKS);
             stripe_setBrightness(128);
             isGet = true;
           }
           // SET SPARKS EFFECT
           if (inputLine.length() > 3 && inputLine.substring(0,11) == F("GET /sparks")) {
-            rainbow = false;
-            fire = false;
-            sparks = true;
-            white_sparks = false;
-            knightrider = false;
+            setEffect(SPARKS);
             stripe_setBrightness(128);
             isGet = true;
           }
           // SET KNIGHTRIDER EFFECT
           if (inputLine.length() > 3 && inputLine.substring(0,16) == F("GET /knightrider")) {
-            rainbow = false;
-            fire = false;
-            sparks = false;
-            white_sparks = false;
-            knightrider = true;
+            setEffect(KNIGHTRIDER);
             stripe_setBrightness(128);
             isGet = true;
           }
           // SET no_effects
           if (inputLine.length() > 3 && inputLine.substring(0,9) == F("GET /nofx")) {
-            rainbow = false;
-            fire = false;
-            sparks = false;
-            white_sparks = false;
-            blinker = false;
+            setEffect(OFF);
             isGet = true;
           }
           if (inputLine.length() > 3 && inputLine.substring(0,11) == F("GET /blink/")) {
@@ -273,10 +261,7 @@ void loop() {
             myOn = getParam.substring(komma3+1, komma4).toInt();
             myOff = getParam.substring(komma4+1).toInt();
 
-            blinker = true;
-            rainbow = false;
-            fire = false;
-            sparks = false;
+            setEffect(BLINKER);
            
             isGet = true;
           }
@@ -305,17 +290,14 @@ void loop() {
 
 // Reset stripe, all LED off and no effects
 void reset() {
+  setEffect(OFF);
+  
   for(int i=0; i<stripe_numPixels(); i++) {
     stripe_setPixelColor(i, 0);
   }
   stripe_setBrightness(255);
   stripe_show();
-  fire = false;
-  rainbow = false;
-  blinker = false;
-  sparks = false;
-  white_sparks = false;
-  knightrider = false;
+
 }
 
 // LED flicker fire effect
