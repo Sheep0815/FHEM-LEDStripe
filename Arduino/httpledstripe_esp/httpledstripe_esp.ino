@@ -28,9 +28,12 @@ boolean blinker=false;
 boolean sparks=false;
 boolean white_sparks=false;
 boolean knightrider = false;
+boolean colorwave = false;
+boolean colorwipe = false;
+boolean pulse = false;
 uint16_t rainbowColor=0;
 
-enum effects{OFF,FIRE,RAINBOW,BLINKER,SPARKS,WHITE_SPARKS,KNIGHTRIDER};
+enum effects{OFF,FIRE,RAINBOW,BLINKER,SPARKS,WHITE_SPARKS,KNIGHTRIDER,COLORWAVE,COLORWIPE,PULSE};
 
 uint16_t delay_interval=50;
 
@@ -76,6 +79,9 @@ void setEffect(effects effect){
   sparks = (effect==SPARKS);
   white_sparks = (effect==WHITE_SPARKS);
   knightrider = (effect==KNIGHTRIDER);
+  colorwave = (effect==COLORWAVE);
+  colorwipe = (effect==COLORWIPE);
+  pulse = (effect==PULSE);
   
 }
 
@@ -238,6 +244,24 @@ void loop() {
             stripe_setBrightness(128);
             isGet = true;
           }
+          // SET COLORWAVE EFFECT
+          if (inputLine.length() > 3 && inputLine.substring(0,14) == F("GET /colorwave")) {
+            setEffect(COLORWAVE);
+            stripe_setBrightness(128);
+            isGet = true;
+          }
+          // SET COLORWIPE EFFECT
+          if (inputLine.length() > 3 && inputLine.substring(0,14) == F("GET /colorwipe")) {
+            setEffect(COLORWIPE);
+            stripe_setBrightness(128);
+            isGet = true;
+          }
+          // SET PULSE EFFECT
+          if (inputLine.length() > 3 && inputLine.substring(0,10) == F("GET /pulse")) {
+            setEffect(PULSE);
+            stripe_setBrightness(128);
+            isGet = true;
+          }
           // SET no_effects
           if (inputLine.length() > 3 && inputLine.substring(0,9) == F("GET /nofx")) {
             setEffect(OFF);
@@ -286,6 +310,10 @@ void loop() {
   if (sparks) sparksEffect();
   if (white_sparks) white_sparksEffect();
   if (knightrider) knightriderEffect();
+  if (colorwave) colorwaveEffect();
+  if (colorwipe) colorwipeEffect();
+  if (pulse) pulseEffect();
+  
 }
 
 // Reset stripe, all LED off and no effects
@@ -407,6 +435,66 @@ void knightriderEffect() {
   
   stripe_show();
   delay(delay_interval);
+}
+
+/**
+ * Map an integer so that [0, striplength] -> [0, 2PI]
+ */
+float map2PI(int i) {
+  return M_PI*2.0*((float)i) / (float)(NUMPIXELS1+NUMPIXELS2);
+}
+
+/**
+ * Scale a value returned from a trig function to a byte value.
+ * [-1, +1] -> [0, 254] 
+ * Note that we ignore the possible value of 255, for efficiency,
+ * and because nobody will be able to differentiate between the
+ * brightness levels of 254 and 255.
+ */
+unsigned char trigScale(float val) {
+  val += 1.0; // move range to [0.0, 2.0]
+  val *= 127.0; // move range to [0.0, 254.0]
+
+  return ((int)val) & 255;
+}
+
+void colorwaveEffect() {
+    cur_step+=1;
+    float ang, rsin, gsin, bsin;
+		for (int i = 0; i < (NUMPIXELS1+NUMPIXELS2); i++) {
+			ang = map2PI(i) - map2PI(cur_step);
+			rsin = sin(ang);
+			gsin = sin(2.0 * ang / 3.0 + map2PI( (int)((NUMPIXELS1+NUMPIXELS2)/6) ));
+			bsin = sin(4.0 * ang / 5.0 + map2PI( (int)((NUMPIXELS1+NUMPIXELS2)/3) ));
+			stripe_setPixelColor(i,Color(trigScale(rsin) , trigScale(gsin),trigScale(bsin)));
+		}  
+      stripe_show();
+  delay(delay_interval);
+}
+
+void colorwipeEffect() {
+  cur_step+=1;
+  if(cur_step>=((NUMPIXELS1+NUMPIXELS2)*2)){
+    cur_step=0;
+  }
+  
+  if(cur_step<(NUMPIXELS1+NUMPIXELS2)){
+    stripe_setPixelColor(cur_step, Color(255,255,255));
+  } else {
+    stripe_setPixelColor(cur_step-(NUMPIXELS1+NUMPIXELS2), Color(0,0,0));
+  }
+  
+  
+  
+  stripe_show();
+  delay(delay_interval);
+}
+
+void pulseEffect() {
+
+  //not yet implemented -> rainbow as replacement
+  rainbowCycle();
+
 }
 
 // Input a value 0 to 255 to get a color value.
